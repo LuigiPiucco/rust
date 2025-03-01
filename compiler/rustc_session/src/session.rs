@@ -978,7 +978,7 @@ pub fn build_session(
     registry: rustc_errors::registry::Registry,
     fluent_resources: Vec<&'static str>,
     driver_lint_caps: FxHashMap<lint::LintId, lint::Level>,
-    target: Target,
+    mut target: Target,
     sysroot: PathBuf,
     cfg_version: &'static str,
     ice_file: Option<PathBuf>,
@@ -1067,6 +1067,9 @@ pub fn build_session(
     let target_filesearch =
         filesearch::FileSearch::new(&sopts.search_paths, &target_tlib_path, &target);
     let host_filesearch = filesearch::FileSearch::new(&sopts.search_paths, &host_tlib_path, &host);
+    if let Some(cpu) = &sopts.cg.target_cpu {
+        target.options.cpu = cpu.clone().into();
+    }
     let sess = Session {
         target,
         host,
