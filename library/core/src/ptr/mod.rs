@@ -1869,6 +1869,121 @@ pub unsafe fn write_volatile<T>(dst: *mut T, src: T) {
     }
 }
 
+/// Performs a volatile read of the value from `src` without moving it. This
+/// leaves the memory in `src` unchanged. It has one small difference from
+/// [`read_volatile`]: a pointer whose address is 0 *is* valid.
+///
+/// Volatile operations are intended to act on I/O memory, and are guaranteed
+/// to not be elided or reordered by the compiler across other volatile
+/// operations. In addition, the "io" variant does not check against null pointers,
+/// because of its intended use: it allows interfacing with MCUs that hard-code
+/// I/O peripherals to address 0.
+///
+/// See [`read_volatile`] for additional considerations on volatile operations.
+///
+/// # Safety
+///
+/// Behavior is undefined if any of the following conditions are violated:
+///
+/// * `dst` must be [valid] for reads.
+///
+/// * `dst` must be properly aligned.
+///
+/// [valid]: self#safety
+///
+/// Just like in C, whether an operation is volatile has no bearing whatsoever
+/// on questions involving concurrent access from multiple threads. Volatile
+/// accesses behave exactly like non-atomic accesses in that regard. In particular,
+/// a race between a `write_io` and any other operation (reading or writing)
+/// on the same location is undefined behavior.
+///
+/// # Examples
+///
+/// Basic usage:
+///
+/// ```
+/// let x = 0 as *mut u8;
+///
+/// unsafe {
+///     let y = std::ptr::read_io(x);
+/// }
+/// ```
+#[inline]
+#[unstable(feature = "ptr_io", issue = "none")]
+#[rustc_diagnostic_item = "ptr_read_io"]
+pub unsafe fn read_io<T>(src: *const T) -> T {
+    // SAFETY: the caller must uphold the safety contract for `volatile_load`.
+    unsafe {
+        ub_checks::assert_unsafe_precondition!(
+            check_language_ub,
+            "ptr::read_io requires that the pointer argument is aligned",
+            (
+                addr: *const () = src as *const (),
+                align: usize = align_of::<T>(),
+            ) => ub_checks::maybe_is_aligned(addr, align)
+        );
+        intrinsics::volatile_load(src)
+    }
+}
+
+/// Performs a volatile write of a memory location with the given value without
+/// reading or dropping the old value. It has one small difference from
+/// [`write_volatile`]: a pointer whose address is 0 *is* valid.
+///
+/// Volatile operations are intended to act on I/O memory, and are guaranteed
+/// to not be elided or reordered by the compiler across other volatile
+/// operations. In addition, the "io" variant does not check against null pointers,
+/// because of its intended use: it allows interfacing with MCUs that hard-code
+/// I/O peripherals to address 0.
+///
+/// See [`write_volatile`] for additional considerations on volatile operations.
+///
+/// # Safety
+///
+/// Behavior is undefined if any of the following conditions are violated:
+///
+/// * `dst` must be [valid] for writes.
+///
+/// * `dst` must be properly aligned.
+///
+/// [valid]: self#safety
+///
+/// Just like in C, whether an operation is volatile has no bearing whatsoever
+/// on questions involving concurrent access from multiple threads. Volatile
+/// accesses behave exactly like non-atomic accesses in that regard. In particular,
+/// a race between a `write_io` and any other operation (reading or writing)
+/// on the same location is undefined behavior.
+///
+/// # Examples
+///
+/// Basic usage:
+///
+/// ```
+/// let y = 0 as *mut u8;
+/// let z = 12;
+///
+/// unsafe {
+///     std::ptr::write_io(y, z);
+/// }
+/// ```
+#[inline]
+#[unstable(feature = "ptr_io", issue = "none")]
+#[rustc_diagnostic_item = "ptr_write_io"]
+pub unsafe fn write_io<T>(dst: *mut T, src: T) {
+    // SAFETY: the caller must uphold the safety contract for `volatile_store`.
+    unsafe {
+        ub_checks::assert_unsafe_precondition!(
+            check_language_ub,
+            "ptr::write_io requires that the pointer argument is aligned and non-null",
+            (
+                addr: *mut () = dst as *mut (),
+                align: usize = align_of::<T>(),
+            ) => ub_checks::maybe_is_aligned(addr, align)
+        );
+        intrinsics::volatile_store(dst, src);
+    }
+}
+
 /// Align pointer `p`.
 ///
 /// Calculate offset (in terms of elements of `size_of::<T>()` stride) that has to be applied
