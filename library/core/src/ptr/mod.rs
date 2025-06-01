@@ -1763,10 +1763,10 @@ pub const unsafe fn write_unaligned<T>(dst: *mut T, src: T) {
 /// - When a volatile operation is used for memory inside an [allocation], it behaves exactly like
 ///   [`read`], except for the additional guarantee that it won't be elided or reordered (see
 ///   above). This implies that the operation will actually access memory and not e.g. be lowered to
-///   a register access or stack pop. Other than that, all the usual rules for memory accesses
-///   apply. In particular, just like in C, whether an operation is volatile has no bearing
-///   whatsoever on questions involving concurrent access from multiple threads. Volatile accesses
-///   behave exactly like non-atomic accesses in that regard.
+///   a register access or stack pop. Other than that, all the usual rules for memory accesses apply
+///   (including provenance). In particular, just like in C, whether an operation is volatile has no
+///   bearing whatsoever on questions involving concurrent access from multiple threads. Volatile
+///   accesses behave exactly like non-atomic accesses in that regard.
 ///
 /// - Volatile operations, however, may also be used to access memory that is _outside_ of any Rust
 ///   allocation. In this use-case, the pointer does *not* have to be [valid] for reads. This is
@@ -1774,9 +1774,11 @@ pub const unsafe fn write_unaligned<T>(dst: *mut T, src: T) {
 ///   mapping, most commonly at fixed addresses reserved by the hardware. These often have special
 ///   semantics associated to their manipulation, and cannot be used as general purpose memory.
 ///   Here, any address value is possible, including 0 and [`usize::MAX`], so long as the semantics
-///   of such a read are well-defined by the target hardware. The access must not trap. It can cause
-///   side-effects, but those must not affect Rust-allocated memory in in any way. This access is
-///   still not considered [atomic], and as such it cannot be used for inter-thread synchronization.
+///   of such a read are well-defined by the target hardware. The provenance of the pointer is
+///   irrelevant, and it can be created with [`without_provenance`]. The access must not trap. It
+///   can cause side-effects, but those must not affect Rust-allocated memory in in any way. This
+///   access is still not considered [atomic], and as such it cannot be used for inter-thread
+///   synchronization.
 ///
 /// Note that volatile memory operations on zero-sized types (e.g., if a zero-sized type is passed
 /// to `read_volatile`) are noops and may be ignored.
@@ -1854,10 +1856,10 @@ pub unsafe fn read_volatile<T>(src: *const T) -> T {
 /// - When a volatile operation is used for memory inside an [allocation], it behaves exactly like
 ///   [`write()`], except for the additional guarantee that it won't be elided or reordered (see
 ///   above). This implies that the operation will actually access memory and not e.g. be lowered to
-///   a register access or stack pop. Other than that, all the usual rules for memory accesses
-///   apply. In particular, just like in C, whether an operation is volatile has no bearing
-///   whatsoever on questions involving concurrent access from multiple threads. Volatile accesses
-///   behave exactly like non-atomic accesses in that regard.
+///   a register access or stack pop. Other than that, all the usual rules for memory accesses apply
+///   (including provenance). In particular, just like in C, whether an operation is volatile has no
+///   bearing whatsoever on questions involving concurrent access from multiple threads. Volatile
+///   accesses behave exactly like non-atomic accesses in that regard.
 ///
 /// - Volatile operations, however, may also be used to access memory that is _outside_ of any Rust
 ///   allocation. In this use-case, the pointer does *not* have to be [valid] for writes. This is
@@ -1865,9 +1867,11 @@ pub unsafe fn read_volatile<T>(src: *const T) -> T {
 ///   mapping, most commonly at fixed addresses reserved by the hardware. These often have special
 ///   semantics associated to their manipulation, and cannot be used as general purpose memory.
 ///   Here, any address value is possible, including 0 and [`usize::MAX`], so long as the semantics
-///   of such a write are well-defined by the target hardware. The access must not trap. It can
-///   cause side-effects, but those must not affect Rust-allocated memory in any way. This access is
-///   still not considered [atomic], and as such it cannot be used for inter-thread synchronization.
+///   of such a write are well-defined by the target hardware. The provenance of the pointer is
+///   irrelevant, and it can be created with [`without_provenance`]. The access must not trap. It
+///   can cause side-effects, but those must not affect Rust-allocated memory in any way. This
+///   access is still not considered [atomic], and as such it cannot be used for inter-thread
+///   synchronization.
 ///
 /// Note that volatile memory operations on zero-sized types (e.g., if a zero-sized type is passed
 /// to `write_volatile`) are noops and may be ignored.
